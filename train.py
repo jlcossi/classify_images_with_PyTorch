@@ -49,9 +49,6 @@ def process_arguments():
     return parser.parse_args()
 
 # Get input arguments and train the specified network
-'''
-    python train.py flowers --save_dir output --arch vgg13 --gpu --learning_rate 0.001 --epochs 3
-'''
 def main():
     # set the default device to cpu
     default_device = torch.device("cpu")
