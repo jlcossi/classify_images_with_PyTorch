@@ -25,7 +25,7 @@ def set_pretrained_model(model_name):
 	return model
 
 # Replace the model classifier with the one specified
-def set_model_classifier(model, input_size, hidden_layer, output_size=102, dropout=0.5):
+def set_model_classifier(model, hidden_layer, input_size=1024, output_size=102, dropout=0.5):
 	''' Replace the given model classifier with the one using the specified parameters
 	'''
 	model.classifier = nn.Sequential(nn.Linear(input_size, hidden_layer),
@@ -34,7 +34,7 @@ def set_model_classifier(model, input_size, hidden_layer, output_size=102, dropo
                                  nn.Linear(hidden_layer, output_size),
                                  nn.LogSoftmax(dim=1))
 
-	return
+	return model
 
 # Train the model
 def train_model(model, trainloader, set_epochs, testloader, learning_rate, device):
@@ -122,7 +122,7 @@ def train_model(model, trainloader, set_epochs, testloader, learning_rate, devic
     return model, epochs, optimizer
 
 # Save the checkpoint
-def create_checkpoint(model, model_name, input_size, output_size, train_data, epochs, optimizer, checkpoint_file_path):
+def create_checkpoint(model, model_name, train_data, epochs, optimizer, checkpoint_file_path, input_size=1024, output_size=102):
     ''' Create a checkpoint file for the given model
     '''
     # Get the mapping of classes to indices
@@ -141,7 +141,7 @@ def create_checkpoint(model, model_name, input_size, output_size, train_data, ep
     # Save the model
     torch.save(checkpoint, checkpoint_file_path)
     
-    return checkpoint_file_path
+    return 
 
 # Load a model from a checkpoint file
 def load_checkpoint(checkpoint_file_path):
