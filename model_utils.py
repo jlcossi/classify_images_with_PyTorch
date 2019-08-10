@@ -1,6 +1,6 @@
 import torch
-import torch.nn.functional as F
 from torch import nn
+import torch.nn.functional as F
 from torch import optim
 from torchvision import datasets, transforms, models
 
@@ -25,7 +25,7 @@ def set_pretrained_model(model_name):
 	return model
 
 # Replace the model classifier with the one specified
-def set_model_classifier(model, hidden_layer, input_size=1024, output_size=102, dropout=0.5):
+def set_model_classifier(model, hidden_layer, input_size=25088, output_size=102, dropout=0.5):
 	''' Replace the given model classifier with the one using the specified parameters
 	'''
 	model.classifier = nn.Sequential(nn.Linear(input_size, hidden_layer),
@@ -37,7 +37,7 @@ def set_model_classifier(model, hidden_layer, input_size=1024, output_size=102, 
 	return model
 
 # Train the model
-def train_model(model, trainloader, set_epochs, testloader, learning_rate, device):
+def train_model(model, trainloader, set_epochs, validloader, learning_rate, device):
     ''' Train the given model
 	'''
     # Generate criterion
@@ -88,20 +88,20 @@ def train_model(model, trainloader, set_epochs, testloader, learning_rate, devic
 
             # if zero, we go into the validation loop
             if steps % print_every == 0:
-                test_loss = 0
+                valid_loss = 0
                 accuracy = 0
                 # Turn the model into evaluation inference mode which turns off dropout
                 # so we can use the network to make predictions instead a test loss and accuracy
                 model.eval()
                 with torch.no_grad():
-                    # Get images and label from the test data
-                    for inputs, labels in testloader:
+                    # Get images and label from the validation data
+                    for inputs, labels in validloader:
                         # Transfer tensors over to the GPU
                         inputs, labels = inputs.to(device), labels.to(device)
                         logps = model.forward(inputs)
                         batch_loss = criterion(logps, labels)
                         # Keep track of our loss to test 
-                        test_loss += batch_loss.item()
+                        valid_loss += batch_loss.item()
 
                         # Calculate accuracy
                         ps = torch.exp(logps)
@@ -111,8 +111,8 @@ def train_model(model, trainloader, set_epochs, testloader, learning_rate, devic
 
                 print(f"Epoch {epoch+1}/{epochs}.. "
                       f"Train loss: {running_loss/print_every:.3f}.. "
-                      f"Test loss: {test_loss/len(testloader):.3f}.. "
-                      f"Test accuracy: {accuracy/len(testloader):.3f}")
+                      f"Validation loss: {valid_loss/len(validloader):.3f}.. "
+                      f"Validation accuracy: {accuracy/len(validloader):.3f}")
 
                 # Reinit running loss
                 running_loss = 0
@@ -122,7 +122,7 @@ def train_model(model, trainloader, set_epochs, testloader, learning_rate, devic
     return model, epochs, optimizer
 
 # Save the checkpoint
-def create_checkpoint(model, model_name, train_data, epochs, optimizer, checkpoint_file_path, input_size=1024, output_size=102):
+def create_checkpoint(model, model_name, train_data, epochs, optimizer, checkpoint_file_path, input_size=25088, output_size=102):
     ''' Create a checkpoint file for the given model
     '''
     # Get the mapping of classes to indices
@@ -132,7 +132,7 @@ def create_checkpoint(model, model_name, train_data, epochs, optimizer, checkpoi
     checkpoint = {'input_size': input_size,
                   'output_size': output_size,
                   'epochs': epochs,
-                  'model': getattr(models, model_name)(pretrained=True),
+                  'model_name': model_name,
                   'classifier': model.classifier,
                   'class_to_idx': model.class_to_idx,
                   'optimizer_state': optimizer.state_dict(),
@@ -148,7 +148,7 @@ def load_checkpoint(checkpoint_file_path):
     ''' Load a checkpoint file and return the model
     '''
     checkpoint = torch.load(checkpoint_file_path)
-    model = checkpoint['model']
+    model = getattr(models, checkpoint['model_name'])(pretrained=True)
     model.class_to_idx = checkpoint['class_to_idx']
     model.classifier = checkpoint['classifier']
     model.load_state_dict(checkpoint['state_dict'])
