@@ -18,17 +18,17 @@ def process_arguments():
     
     parser.add_argument('--save_dir',
                        action='store',
-                       dest='save_directory', default='checkpoint.pth',
+                       dest='save_directory', default='checkpoint_dir',
                        help='Directory where the checkpoint file is saved')
     
     parser.add_argument('--arch',
                        action='store',
-                       dest='choosen_archi', default='densenet121',
-                       help='Choosen pretrained architecture: vgg13 or densenet121')
+                       dest='choosen_archi', default='vgg16',
+                       help='Choosen pretrained architecture: vgg16 or densenet121')
     
     parser.add_argument('--learning_rate',
                        action='store',
-                       dest='learning_rate', type=float, default=0.003,
+                       dest='learning_rate', type=float, default=0.001,
                        help='Neural Network learning rate')
     
     parser.add_argument('--hidden_units',
@@ -38,7 +38,7 @@ def process_arguments():
     
     parser.add_argument('--epochs',
                        action='store',
-                       dest='epochs', type=int, default=5,
+                       dest='epochs', type=int, default=1,
                        help='Number of Epochs for the training')
     
     parser.add_argument('--gpu',
@@ -50,27 +50,24 @@ def process_arguments():
 
 # Get input arguments and train the specified network
 def main():
-    # set the default device to cpu
-    default_device = torch.device("cpu")
     
     # Get the input arguments
     input_arguments = process_arguments()
     
     # Set the device to cuda if specified
-    if (input_arguments.gpu):
-        default_device = torch.device("cuda")
+    default_device = torch.device("cuda" if torch.cuda.is_available() and input_arguments.gpu else "cpu")
     
     # Set input_size for densenet121, by default
-    input_size = 1024
+    input_size = 25088
     choosen_architecture = input_arguments.choosen_archi
     
     # Set input_size according to vgg13
-    if (choosen_architecture == "vgg13"): input_size = 25088
+    if (choosen_architecture == "densenet121"): input_size = 1024
     
-    # Restrict archi to vgg13 or densenet121
-    if (choosen_architecture != "vgg13") and (choosen_architecture != "densenet121"):
-        print("Pretrained Choosen arhitecture is densenet121 or vgg13, using defaut: densenet121")
-        choosen_architecture = "densenet121"
+    # Restrict archi to vgg16 or densenet121
+    if (choosen_architecture != "vgg16") and (choosen_architecture != "densenet121"):
+        print("Pretrained Choosen arhitecture is densenet121 or vgg16, using defaut: vgg16")
+        choosen_architecture = "vgg16"
         
     # Load data
     train_data, test_data, valid_data, trainloader, testloader, validloader = du.loading_data(input_arguments.data_directory)
@@ -79,13 +76,13 @@ def main():
     model = mu.set_pretrained_model(choosen_architecture)
     
     # Set model classifier
-    model = mu.set_model_classifier(model, input_arguments.hidden_units, input_size, output_size=102, dropout=0.5)
+    model = mu.set_model_classifier(model, input_arguments.hidden_units, input_size, output_size=102, dropout=0.05)
     
     # Train the model
     model, epochs, optimizer = mu.train_model(model, 
                                               trainloader, 
                                               input_arguments.epochs, 
-                                              testloader, 
+                                              validloader, 
                                               input_arguments.learning_rate, 
                                               default_device)
     
